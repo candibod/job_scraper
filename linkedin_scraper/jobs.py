@@ -21,6 +21,8 @@ class Job(Scraper):
         job_description=None,
         benefits=None,
         driver=None,
+        card_insight=None,
+        footer_info=None,
         close_on_complete=True,
         scrape=True,
     ):
@@ -35,6 +37,8 @@ class Job(Scraper):
         self.applicant_count = applicant_count
         self.job_description = job_description
         self.benefits = benefits
+        self.card_insight = card_insight
+        self.footer_info = footer_info
 
         if scrape:
             self.scrape(close_on_complete)
@@ -58,18 +62,19 @@ class Job(Scraper):
             "posted_date": self.posted_date,
             "applicant_count": self.applicant_count,
             "job_description": self.job_description,
-            "benefits": self.benefits
+            "benefits": self.benefits,
         }
-
 
     def scrape_logged_in(self, close_on_complete=True):
         driver = self.driver
-        
+
         driver.get(self.linkedin_url)
         self.focus()
         self.job_title = self.wait_for_element_to_load(name="jobs-unified-top-card__job-title").text.strip()
         self.company = self.wait_for_element_to_load(name="jobs-unified-top-card__company-name").text.strip()
-        self.company_linkedin_url = self.wait_for_element_to_load(name="jobs-unified-top-card__company-name").find_element_by_tag_name("a").get_attribute("href")
+        self.company_linkedin_url = (
+            self.wait_for_element_to_load(name="jobs-unified-top-card__company-name").find_element_by_tag_name("a").get_attribute("href")
+        )
         self.location = self.wait_for_element_to_load(name="jobs-unified-top-card__bullet").text.strip()
         self.posted_date = self.wait_for_element_to_load(name="jobs-unified-top-card__posted-date").text.strip()
         try:

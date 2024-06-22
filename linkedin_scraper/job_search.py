@@ -36,7 +36,22 @@ class JobSearch(Scraper):
         linkedin_url = job_div.get_attribute("href")
         company = base_element.find_element(By.CLASS_NAME, "artdeco-entity-lockup__subtitle").text
         location = base_element.find_element(By.CLASS_NAME, "job-card-container__metadata-wrapper").text
-        job = Job(linkedin_url=linkedin_url, job_title=job_title, company=company, location=location, scrape=False, driver=self.driver)
+        footer_info = base_element.find_element(By.CLASS_NAME, "job-card-list__footer-wrapper").text
+        try:
+            card_insight = base_element.find_element(By.CLASS_NAME, "job-card-container__job-insight-text").text
+        except Exception as e:
+            card_insight = ""
+
+        job = Job(
+            linkedin_url=linkedin_url,
+            job_title=job_title,
+            company=company,
+            location=location,
+            card_insight=card_insight,
+            footer_info=footer_info,
+            scrape=False,
+            driver=self.driver,
+        )
         return job
 
     def scrape_logged_in(self, close_on_complete=True, scrape_recommended_jobs=True):
@@ -58,8 +73,44 @@ class JobSearch(Scraper):
                 setattr(self, area_name, area_results)
         return
 
+    def get_categorized_top_card_info(self, base_element):
+        test = {}
+        for index, element in enumerate(base_element):
+            if str(element.text).lower().find("employees") > -1:
+                emp_info = element.text.split(chr(183))
+                test["emp_count"] = emp_info[0].split(" ")[0]
+                test["emp_category"] = emp_info[1].strip() if len(emp_info) > 1 else ""
+                continue
+
+            test[index] = element.text
+
+        return test
+
+    def get_unified_data_dict(self, job, **kwargs):
+        job_details = {
+            "linkedin_url": job.linkedin_url,
+            "job_title": job.job_title.split("\n")[0],
+            "company": job.company,
+            "company_linkedin_url": job.company_linkedin_url,
+            "location": job.location,
+            "posted_date": kwargs["date_info"] if "date_info" in kwargs else job.posted_date,
+            "applicant_count": job.applicant_count,
+            "job_description": kwargs["desc"] if "desc" in kwargs else "",
+            "easy_apply": True if "easy_apply" in kwargs and kwargs["easy_apply"].lower().find("easy") > -1 else False,
+            "emp_count": kwargs["top_card"]["emp_count"] if "top_card" in kwargs and "emp_count" in kwargs["top_card"] else "",
+            "emp_category": kwargs["top_card"]["emp_category"] if "top_card" in kwargs and "emp_category" in kwargs["top_card"] else "",
+            "benefits": job.benefits,
+            "card_insight": job.card_insight,
+            "footer_info": job.footer_info,
+            "top_card": kwargs["top_card"] if "top_card" in kwargs else "",
+        }
+
+        return job_details
+
     def search(self, search_term: str) -> List[Job]:
-        url = os.path.join(self.base_url, "search") + f"?keywords={urllib.parse.quote(search_term)}&refresh=true"
+        # Overriding the default wait time to 2sec
+        self.WAIT_FOR_ELEMENT_TIMEOUT = 2
+        url = self.base_url if self.base_url == "" else os.path.join(self.base_url, "search") + f"?keywords={urllib.parse.quote(search_term)}&refresh=true"
         self.driver.get(url)
         self.scroll_to_bottom()
         self.focus()
@@ -72,16 +123,41 @@ class JobSearch(Scraper):
         self.focus()
         sleep(self.WAIT_FOR_ELEMENT_TIMEOUT)
 
-        self.scroll_class_name_element_to_page_percent(job_listing_class_name, 0.6)
-        self.focus()
-        sleep(self.WAIT_FOR_ELEMENT_TIMEOUT)
+        # self.scroll_class_name_element_to_page_percent(job_listing_class_name, 0.6)
+        # self.focus()
+        # sleep(self.WAIT_FOR_ELEMENT_TIMEOUT)
 
-        self.scroll_class_name_element_to_page_percent(job_listing_class_name, 1)
-        self.focus()
-        sleep(self.WAIT_FOR_ELEMENT_TIMEOUT)
+        # self.scroll_class_name_element_to_page_percent(job_listing_class_name, 1)
+        # self.focus()
+        # sleep(self.WAIT_FOR_ELEMENT_TIMEOUT)
 
         job_results = []
+        count = 0
         for job_card in self.wait_for_all_elements_to_load(name="job-card-list", base=job_listing):
+            """
+            Get basic details like role, company name
+            """
             job = self.scrape_job_card(job_card)
-            job_results.append(job)
+
+            """
+            Click on the element to get the job description & full details about the posting
+            """
+            job_card.click()
+            job_details_element = self.wait_for_element_to_load(name="jobs-search__job-details--wrapper")
+            desc = job_details_element.find_element(By.CLASS_NAME, "jobs-description-content__text--stretch").text
+            easy_apply = job_details_element.find_element(By.CLASS_NAME, "jobs-apply-button--top-card").text
+            top_card_element = self.wait_for_all_elements_to_load(name="job-details-jobs-unified-top-card__job-insight", base=job_details_element)
+            date_info = job_details_element.find_element(By.CLASS_NAME, "job-details-jobs-unified-top-card__primary-description-container").text
+
+            try:
+                top_card_info = self.get_categorized_top_card_info(top_card_element)
+            except Exception as e:
+                top_card_info = {}
+                print(e)
+
+            job_results.append(self.get_unified_data_dict(job=job, desc=desc, easy_apply=easy_apply, top_card=top_card_info, date_info=date_info))
+            count += 1
+            if count == 5:
+                break
+
         return job_results
