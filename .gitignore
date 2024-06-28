@@ -14,4 +14,4 @@ creds.json
 venv
 *.zip
 .session_info
-job_listings.json
+job_listings*

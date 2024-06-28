@@ -11,6 +11,7 @@ class Job(Scraper):
 
     def __init__(
         self,
+        linkedin_id=None,
         linkedin_url=None,
         job_title=None,
         company=None,
@@ -27,6 +28,7 @@ class Job(Scraper):
         scrape=True,
     ):
         super().__init__()
+        self.linkedin_id = linkedin_id
         self.linkedin_url = linkedin_url
         self.job_title = job_title
         self.driver = driver
