@@ -57,24 +57,26 @@ def main():
     cookies = cookies_dict["cookies"]
 
     new_driver = webdriver.Chrome()
+    new_driver.set_window_size(1600, 1000)
     new_driver.get("https://www.linkedin.com/login")
 
     job_listings = []
     for cookie in cookies:
         new_driver.add_cookie(cookie)
     else:
-        page_count = 2
+        page_count = 10
         current_page = 0
         while current_page < page_count:
             url = (
                 "https://www.linkedin.com/jobs/search/?currentJobId=3928387949&distance=25&f_E=3,4&f_JT=F&f_T=9,39,25201&"
-                "f_TPR=r604800&geoId=103644278&keywords=software developer engineer&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true&sortBy=R"
+                "f_TPR=r86400&geoId=103644278&keywords=software developer engineer&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true&sortBy=R"
                 "&start="
             ) + str(current_page * 25)
-            print(url)
+            # 86400 604800
+            print("Scraping URL: ", url)
             job_search = JobSearch(driver=new_driver, base_url=url, close_on_complete=False, scrape=False)
             job_listings = job_listings + job_search.search()
-
+            print("Fetched results")
             current_page += 1
 
         save_results(job_listings)

@@ -148,20 +148,16 @@ class JobSearch(Scraper):
         job_listing_class_name = "jobs-search-results-list"
         job_listing = self.wait_for_element_to_load(name=job_listing_class_name)
 
-        self.scroll_class_name_element_to_page_percent(job_listing_class_name, 0.3)
-        self.focus()
-        sleep(self.WAIT_FOR_ELEMENT_TIMEOUT)
-
-        # self.scroll_class_name_element_to_page_percent(job_listing_class_name, 0.6)
-        # self.focus()
-        # sleep(self.WAIT_FOR_ELEMENT_TIMEOUT)
-
-        # self.scroll_class_name_element_to_page_percent(job_listing_class_name, 1)
-        # self.focus()
-        # sleep(self.WAIT_FOR_ELEMENT_TIMEOUT)
+        splits = 5
+        for i in range(1, splits + 1):
+            self.scroll_class_name_element_to_page_percent(job_listing_class_name, i / splits)
+            self.focus()
+            sleep(self.WAIT_FOR_ELEMENT_TIMEOUT)
 
         job_results = []
-        for index, job_card in enumerate(self.wait_for_all_elements_to_load(name="job-card-list", base=job_listing)):
+        for index, job_card_wrap in enumerate(self.wait_for_all_elements_to_load(name="jobs-search-results__list-item", base=job_listing)):
+            print(index)
+            job_card = self.wait_for_element_to_load(name="job-card-list", base=job_card_wrap)
             """
             Get basic details like role, company name
             """
@@ -188,4 +184,5 @@ class JobSearch(Scraper):
                 )
             )
 
+        print("results count: ", len(job_results))
         return job_results
