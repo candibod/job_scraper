@@ -1,4 +1,5 @@
 import os
+import time
 import json
 
 from linkedin_scraper import JobSearch
@@ -33,6 +34,7 @@ def process_results(results=[]):
             "card_insight": result["card_insight"],
             "footer_info": result["footer_info"],
             "stack_summary": result["job_role_summary"].split("\n")[5] if len(result["job_role_summary"].split("\n")) > 5 else "",
+            "timestamp": int(time.time()),
         }
 
         processed_results.append(job_details)
