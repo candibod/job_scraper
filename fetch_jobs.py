@@ -26,6 +26,7 @@ def process_results(results=[]):
             "company_name": result["company"],
             "company_category": result["emp_category"],
             "company_emp_count": result["emp_count"],
+            "company_emp_count_linkdn": result["emp_count_linkdn"],
             "hiring_manager_name": result["hiring_manager"]["name"].split("\n")[0].strip() if result["hiring_manager"] else "",
             "hiring_manager_url": result["hiring_manager"]["profile_url"] if result["hiring_manager"] else "",
             "posted_date": result["posted_date"].split(chr(183))[1].strip(),
@@ -34,6 +35,7 @@ def process_results(results=[]):
             "card_insight": result["card_insight"],
             "footer_info": result["footer_info"],
             "stack_summary": result["job_role_summary"].split("\n")[5] if len(result["job_role_summary"].split("\n")) > 5 else "",
+            "top_card_summary": "\n".join([i for i in result["top_card"].values()]),
             "timestamp": int(time.time()),
         }
 
@@ -70,7 +72,7 @@ def main():
         current_page = 0
         while current_page < page_count:
             url = (
-                "https://www.linkedin.com/jobs/search/?currentJobId=3928387949&distance=25&f_E=3,4&f_JT=F&f_T=9,39,25201&"
+                "https://www.linkedin.com/jobs/search/?currentJobId=3977979024&distance=25&f_E=3,4&f_JT=F&f_T=9,39,25201&"
                 "f_TPR=r86400&geoId=103644278&keywords=software developer engineer&origin=JOB_SEARCH_PAGE_JOB_FILTER&refresh=true&sortBy=R"
                 "&start="
             ) + str(current_page * 25)

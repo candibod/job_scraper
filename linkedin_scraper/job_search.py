@@ -92,6 +92,26 @@ class JobSearch(Scraper):
 
         return test
 
+    def get_company_info(self, base_element):
+        top_card_info = {}
+        try:
+            company_info = base_element.find_element(By.CLASS_NAME, "t-14")
+            company_info_text = company_info.text
+            elements = company_info.find_elements(By.XPATH, ".//*")
+
+            print(company_info_text)
+            print(elements[0].text)
+            print(elements[1].text)
+
+            top_card_info["emp_count"] = elements[0].text.split(" ")[0]
+            top_card_info["emp_category"] = company_info_text.split(top_card_info["emp_count"])[0]
+            top_card_info["emp_count_linkdn"] = elements[1].text.split(" ")[0] if len(elements) > 0 else ""
+        except Exception as e:
+            print(e)
+            pass
+
+        return top_card_info
+
     def get_unified_data_dict(self, job, **kwargs):
         job_details = {
             "job_id": job.linkedin_id,
@@ -105,8 +125,9 @@ class JobSearch(Scraper):
             "job_description": kwargs["desc"] if "desc" in kwargs else "",
             "easy_apply": True if "easy_apply" in kwargs and kwargs["easy_apply"].lower().find("easy") > -1 else False,
             "apply_url": "",
-            "emp_count": kwargs["top_card"]["emp_count"] if "top_card" in kwargs and "emp_count" in kwargs["top_card"] else "",
-            "emp_category": kwargs["top_card"]["emp_category"] if "top_card" in kwargs and "emp_category" in kwargs["top_card"] else "",
+            "emp_count": kwargs["company_info"]["emp_count"] if "company_info" in kwargs and "emp_count" in kwargs["company_info"] else "",
+            "emp_category": kwargs["company_info"]["emp_category"] if "company_info" in kwargs and "emp_category" in kwargs["company_info"] else "",
+            "emp_count_linkdn": kwargs["company_info"]["emp_count_linkdn"] if "company_info" in kwargs and "emp_count_linkdn" in kwargs["company_info"] else "",
             "benefits": job.benefits,
             "card_insight": job.card_insight,
             "footer_info": job.footer_info,
@@ -156,26 +177,32 @@ class JobSearch(Scraper):
 
         job_results = []
         for index, job_card_wrap in enumerate(self.wait_for_all_elements_to_load(name="jobs-search-results__list-item", base=job_listing)):
-            print(index)
+            # if index == 1:
+            #     break
             job_card = self.wait_for_element_to_load(name="job-card-list", base=job_card_wrap)
             """
             Get basic details like role, company name
             """
             job = self.scrape_job_card(job_card)
+            print(index, job.linkedin_id)
 
             """
             Click on the element to get the job description & full details about the posting
             """
             job_card.click()
             sleep(1)
+            self.scroll_class_name_element_to_page_percent("jobs-search__job-details--wrapper", 1)
+            sleep(1)
 
             job_details_element = self.wait_for_element_to_load(name="jobs-search__job-details--wrapper")
             top_card_element = self.wait_for_all_elements_to_load(name="job-details-jobs-unified-top-card__job-insight", base=job_details_element)
+            company_info = self.wait_for_element_to_load(name="jobs-company__box")
 
             job_results.append(
                 self.get_unified_data_dict(
                     job=job,
                     top_card=self.get_categorized_top_card_info(top_card_element),
+                    company_info=self.get_company_info(company_info),
                     easy_apply=self.return_text_from_div("jobs-apply-button--top-card", job_details_element),
                     desc=self.return_text_from_div("jobs-description-content__text--stretch", job_details_element),
                     job_role_summary=self.return_text_from_div("job-details-segment-attribute-card-two-pane", job_details_element),
