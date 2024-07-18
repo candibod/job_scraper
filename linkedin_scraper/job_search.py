@@ -97,15 +97,11 @@ class JobSearch(Scraper):
         try:
             company_info = base_element.find_element(By.CLASS_NAME, "t-14")
             company_info_text = company_info.text
-            elements = company_info.find_elements(By.XPATH, ".//*")
-
-            print(company_info_text)
-            print(elements[0].text)
-            print(elements[1].text)
+            elements = company_info.find_elements(By.TAG_NAME, "span")
 
             top_card_info["emp_count"] = elements[0].text.split(" ")[0]
             top_card_info["emp_category"] = company_info_text.split(top_card_info["emp_count"])[0]
-            top_card_info["emp_count_linkdn"] = elements[1].text.split(" ")[0] if len(elements) > 0 else ""
+            top_card_info["emp_count_linkdn"] = elements[1].text.split(" ")[0] if len(elements) > 1 else ""
         except Exception as e:
             print(e)
             pass
