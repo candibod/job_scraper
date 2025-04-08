@@ -92,7 +92,10 @@ class JobSearch(Scraper):
 
         return test
 
-    def get_company_info(self, base_element):
+    def get_company_info(self, base_element, job_id):
+        if not base_element:
+            return {}
+
         top_card_info = {}
         try:
             company_info = base_element.find_element(By.CLASS_NAME, "t-14")
@@ -104,7 +107,7 @@ class JobSearch(Scraper):
             top_card_info["emp_count_linkdn"] = elements[1].text.split(" ")[0] if len(elements) > 1 else ""
         except Exception as e:
             print(e)
-            pass
+            self.driver.get_screenshot_as_file(".logs/errors/" + job_id + "_company_info.png")
 
         return top_card_info
 
@@ -187,18 +190,26 @@ class JobSearch(Scraper):
             """
             job_card.click()
             sleep(1)
+            self.scroll_class_name_element_to_page_percent("jobs-search__job-details--wrapper", 0.9)
+            sleep(0.5)
             self.scroll_class_name_element_to_page_percent("jobs-search__job-details--wrapper", 1)
-            sleep(1)
+            sleep(0.5)
 
             job_details_element = self.wait_for_element_to_load(name="jobs-search__job-details--wrapper")
             top_card_element = self.wait_for_all_elements_to_load(name="job-details-jobs-unified-top-card__job-insight", base=job_details_element)
-            company_info = self.wait_for_element_to_load(name="jobs-company__box")
+            try:
+                company_info = self.wait_for_element_to_load(name="jobs-company__box")
+            except Exception as e:
+                self.driver.get_screenshot_as_file(".logs/errors/" + job.linkedin_id + ".png")
+                sleep(0.5)
+                print(e)
+                company_info = None
 
             job_results.append(
                 self.get_unified_data_dict(
                     job=job,
                     top_card=self.get_categorized_top_card_info(top_card_element),
-                    company_info=self.get_company_info(company_info),
+                    company_info=self.get_company_info(company_info, job.linkedin_id),
                     easy_apply=self.return_text_from_div("jobs-apply-button--top-card", job_details_element),
                     desc=self.return_text_from_div("jobs-description-content__text--stretch", job_details_element),
                     job_role_summary=self.return_text_from_div("job-details-segment-attribute-card-two-pane", job_details_element),
